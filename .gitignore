@@ -1,0 +1,18 @@
+# Python bytecode (cache) files
+*.pyc
+__pycache__/
+
+# Folders
+hidden_states/
+ift-models/
+run_scripts/
+
+# Datasets (WildJB is excluded as it's large)
+datasets/wildjb/
+
+# Notebooks
+*.ipynb_checkpoints
+playground.ipynb
+
+# Bash scripts
+*.sh

@@ -12,6 +12,7 @@ datasets/wildjb/
 
 # Notebooks
 *.ipynb_checkpoints
+visualization.ipynb
 playground.ipynb
 
 # Bash scripts

@@ -13,7 +13,11 @@ datasets/wildjb/
 # Notebooks
 *.ipynb_checkpoints
 visualization.ipynb
+plot.ipynb
 playground.ipynb
+
+# Python scripts
+utils/plot.py
 
 # Bash scripts
 *.sh

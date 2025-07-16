@@ -21,3 +21,6 @@ utils/plot.py
 
 # Bash scripts
 *.sh
+
+# Files
+guardrail_state.pth

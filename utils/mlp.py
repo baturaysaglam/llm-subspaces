@@ -11,9 +11,11 @@ class MLP(nn.Module):
         super().__init__()
         layers = []
         prev_dim = input_dim
+
         for h in hidden_layers:
-            layers += [nn.Linear(prev_dim, h), nn.GELU(), nn.LayerNorm(h)]
+            layers += [nn.Linear(prev_dim, h), nn.GELU()]
             prev_dim = h
+        
         layers.append(nn.Linear(prev_dim, 4))
         self.net = nn.Sequential(*layers)
 
@@ -45,8 +47,6 @@ class MLP(nn.Module):
         opt = torch.optim.Adam(self.parameters(), lr=learning_rate, weight_decay=1e-4)
         criterion = nn.CrossEntropyLoss()
 
-        best_state, best_g_auc = copy.deepcopy(self.state_dict()), 0.0
-
         for epoch in range(1, epochs + 1):
             nn.Module.train(self, True)
             for x, y in loader:
@@ -57,27 +57,21 @@ class MLP(nn.Module):
 
             nn.Module.train(self, False)
             with torch.no_grad():
-                logits = self(X_eval)                       # (N, 4)
+                logits = self(X_eval)  # (N, 4)
                 probs  = torch.softmax(logits, dim=1)
                 preds = logits.argmax(1)
                 acc = (preds == y_eval).float().mean().item()
 
                 # ---------- binary grouping -------------
                 group1_idx = torch.tensor([0, 2], device=probs.device)
-                p_group1   = probs[:, group1_idx].sum(dim=1).cpu().numpy()   # score = P(group1)
-                y_group    = torch.isin(y_eval, group1_idx).long().cpu().numpy()  # 1 if label in {0,2}
+                p_group1 = probs[:, group1_idx].sum(dim=1).cpu().numpy()  # score = P(group1)
+                y_group = torch.isin(y_eval, group1_idx).long().cpu().numpy()  # 1 if label in {0,2}
 
                 # ---------- metrics -------------------------
-                g_auc = roc_auc_score(y_group, p_group1)         # grouped ROC-AUC
-                acc   = (preds == y_eval).float().mean().item()  # optional sanity-check
+                g_auc = roc_auc_score(y_group, p_group1)  # grouped ROC-AUC
+                acc = (preds == y_eval).float().mean().item()  # optional sanity-check
 
             print(f"epoch [{epoch}/{epochs}] | eval acc: {acc:.4f} | grouped AUC: {g_auc:.4f}")
-
-            if g_auc > best_g_auc:
-                best_g_auc, best_state = acc, copy.deepcopy(self.state_dict())
-
-        if return_best_model:
-            self.load_state_dict(best_state)
 
         return self
 

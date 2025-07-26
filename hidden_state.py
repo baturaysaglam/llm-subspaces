@@ -99,6 +99,13 @@ def main(args):
             outputs = model(input_ids=input_ids, attention_mask=attention_mask, use_cache=False)        
             layer_hidden_states = outputs.hidden_states[args.layer]  # tuple of shape [batch, max_seq_len, hidden_dim]
 
+            # Free up some GPU memory
+            input_ids = input_ids.cpu()
+            del encoded_inputs
+            del attention_mask
+            del outputs
+            torch.cuda.empty_cache()
+
             # Taking the last token position might introduce noise because of the padding tokens
             pad_mask = (input_ids == tokenizer.pad_token_id)
             first_pad_positions = torch.where(

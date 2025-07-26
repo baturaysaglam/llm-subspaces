@@ -6,6 +6,7 @@ __pycache__/
 hidden_states/
 ift-models/
 run_scripts/
+singular_values/
 
 # Datasets (WildJB is excluded as it's large)
 datasets/wildjb/
@@ -17,6 +18,7 @@ plot.ipynb
 playground.ipynb
 
 # Python scripts
+plot.py
 utils/plot.py
 
 # Bash scripts

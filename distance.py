@@ -98,7 +98,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Compute the Sliced Wasserstein Distance between topic pairs in hidden states")
     parser.add_argument('--model',
                         type=str,
-                        default='foundation-sec-8b-instruct',
+                        default='llama-3.1-8b-instruct',
                         help="Name of the model to analyze")
     parser.add_argument('--layer',
                         type=int,

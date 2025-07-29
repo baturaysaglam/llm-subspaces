@@ -8,8 +8,6 @@ from tqdm import tqdm
 
 
 hf_model_name_dict = {
-    'foundation-sec-8b': 'fdtn-ai/Foundation-Sec-8B',
-    'foundation-sec-8b-instruct': 'ift-models/foundation-sec-8b-instruct',
     'mistral-small-24b-base-2501': 'mistralai/Mistral-Small-24B-Base-2501',
     'mistral-small-24b-instruct-2501': 'mistralai/Mistral-Small-24B-Instruct-2501',
     'mistral-7b-v0.3': 'mistralai/Mistral-7B-v0.3',

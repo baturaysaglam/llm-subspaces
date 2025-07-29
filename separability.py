@@ -101,7 +101,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Check for separability using linear SVM between two topics in hidden states")
     parser.add_argument('--model',
                         type=str,
-                        default='foundation-sec-8b-instruct',
+                        default='llama-3.1-8b-instruct',
                         help="Hugging Face model name or path")
     parser.add_argument('--layer',
                         type=int,

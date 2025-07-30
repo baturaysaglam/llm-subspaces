@@ -35,7 +35,7 @@ source llm-subspaces/bin/activate
 ```
 
 ### Step 2: Install required packages
-```
+```bash
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
@@ -90,7 +90,7 @@ options:
 ```
 
 #### **Example usage:**
-```
+```bash
 python hidden_state.py \
     --model meta-llama/Llama-3.1-8B \
     --layer 32 \
@@ -105,7 +105,7 @@ python hidden_state.py \
 ### **Optional:** Sensitivity Analysis via Word Masking
 
 We perform a **sensitivity analysis** in the paper (see **Section 5.3**) by masking individual words based on their frequency in English. To enable this during hidden state collection, include the following flags:
-```
+```bash
     --keyword_th 60 \
     --unigram_freq_path datasets/arxiv/unigram_freq.csv \
     --mask_token <MASK>
@@ -135,7 +135,7 @@ options:
 ```
 
 #### **Example usage:**
-```
+```bash
 python separability.py \
     --model llama-3.1-8b-instruct \
     --layer 32 \

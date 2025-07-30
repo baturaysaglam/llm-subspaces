@@ -124,11 +124,11 @@ def main(args):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser("Extract hidden states from a causal language model for a specific layer and topic.")
+    parser = argparse.ArgumentParser("Extract hidden states from a causal language model at a specified layer for a given topic.")
     parser.add_argument('--model',
                         type=str,
                         default='meta-llama/Llama-3.1-8B',
-                        help="Hugging Face model name or path. The model should be a causal language model.")
+                        help="The official Hugging Face model name or local path to the transformers checkpoint. The model must be causal.")
     parser.add_argument('--layer',
                         type=int,
                         default=32,
@@ -136,7 +136,8 @@ if __name__ == '__main__':
     parser.add_argument('--dataset',
                         type=str,
                         default='arxiv',
-                        help="Name of the dataset to be used. Datasets are assumed to be contained under './datasets/")
+                        choices=['arxiv', 'cot', 'wildjb'],
+                        help="Name of the dataset to be used. Datasets are assumed to be contained under './datasets/'.")
     parser.add_argument('--topic',
                         type=str,
                         default='eess',
@@ -149,18 +150,19 @@ if __name__ == '__main__':
                             'q-bio',
                             'stat',
                             # Chain-of-Thought datasets
-                            'commonsense_qa_cot',
                             'commonsense_qa',
-                            'gsm8k_cot',
+                            'commonsense_qa_cot',
                             'gsm8k',
-                            'mmlu_cot',
+                            'gsm8k_cot',
                             'mmlu',
+                            'mmlu_cot',
                             # Alignment datasets
                             'adversarial_benign',
                             'adversarial_harmful',
                             'vanilla_benign',
                             'vanilla_harmful',
-                        ])
+                        ],
+                        help="Topic or subset within the dataset. For arXiv, these are the subject areas. For CoT and Wild-JB, these are the respective subsets.")
     parser.add_argument('--batch_size',
                         type=int,
                         default=25,
@@ -176,7 +178,7 @@ if __name__ == '__main__':
     parser.add_argument('--min_tokens',
                         type=int,
                         default=None,
-                        help="Threshold for the minimum number of tokens.")
+                        help="Threshold for the minimum number of tokens. If None, no filtering will be applied.")
     parser.add_argument('--keyword_th',
                         type=int,
                         default=None,
@@ -184,10 +186,7 @@ if __name__ == '__main__':
     parser.add_argument('--mask_token',
                         type=str,
                         default='<MASK>',
-                        help="The special token to use for masking the topic-specific keywords. Default is '<MASK>'.")
-    parser.add_argument('--gpu',
-                        type=int,
-                        default=0)
+                        help="The special token to use for masking the topic-specific keywords (for sensitivity analysis). Default is '<MASK>'.")
     args = parser.parse_args()
 
     main(args)

@@ -95,32 +95,32 @@ def main(args):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="Compute the Sliced Wasserstein Distance between topic pairs in hidden states")
+    parser = argparse.ArgumentParser(description="Compute the Sliced Wasserstein Distance between hidden state distributions of two topics.")
     parser.add_argument('--model',
                         type=str,
-                        default='llama-3.1-8b-instruct',
-                        help="Name of the model to analyze")
+                        default='llama-3.1-8b',
+                        help="The Hugging Face model name or path should be entered in lowercase after the first `/` in the official model name, e.g., `llama-3.1-8b`.")
     parser.add_argument('--layer',
                         type=int,
                         default=32,
-                        help="Layer number to analyze")
+                        help="Layer number to extract hidden states from. Uses 1-based indexing, e.g., to get the 17-th layer, set this to 17.")
     parser.add_argument('--dataset',
                         type=str,
-                        default='wildjb',
-                        help="Name of the dataset to analyze")
+                        default='arxiv',
+                        choices=['arxiv', 'cot', 'wildjb'],
+                        help="Name of the dataset. It has to be the same for both topics.")
     parser.add_argument('--topics',
                         type=str,
                         nargs='+',
-                        default=['math', 'physics'],
-                        help="List of topics. Only two topics are allowed for separability check. Example: `--topics math physics`")
+                        help="List of topics. Only two topics are allowed for distance check. Example: `--topics math physics`")
     parser.add_argument('--num_projections',
                         type=int,
                         default=10000,
-                        help="Number of projections for sliced Wasserstein distance")
+                        help="Number of projections for the sliced Wasserstein approximation.")
     parser.add_argument('--gpu',
                         type=int,
                         default=0,
-                        help="GPU number to use")
+                        help="Ordinal of the GPU to use. Default is 0.")
     args = parser.parse_args()
 
     main(args)

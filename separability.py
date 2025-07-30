@@ -98,24 +98,23 @@ def main(args):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="Check for separability using linear SVM between two topics in hidden states")
+    parser = argparse.ArgumentParser(description="Evaluate linear separability between two topics in hidden space using a linear SVM.")
     parser.add_argument('--model',
                         type=str,
-                        default='llama-3.1-8b-instruct',
-                        help="Hugging Face model name or path")
+                        default='llama-3.1-8b',
+                        help="The Hugging Face model name or path should be entered in lowercase after the first `/` in the official model name, e.g., `llama-3.1-8b`.")
     parser.add_argument('--layer',
                         type=int,
                         default=32,
-                        help="Layer number to use the hidden states from")
+                        help="Layer number to extract hidden states from. Uses 1-based indexing, e.g., to get the 17-th layer, set this to 17.")
     parser.add_argument('--dataset',
                         type=str,
                         default='arxiv',
-                        help="Name of the dataset",
-                        choices=['arxiv', 'cot', 'wildjb'])
+                        choices=['arxiv', 'cot', 'wildjb'],
+                        help="Name of the dataset. It has to be the same for both topics.")
     parser.add_argument('--topics',
                         type=str,
                         nargs='+',
-                        default=['math', 'physics'],
                         help="List of topics. Only two topics are allowed for separability check. Example: `--topics math physics`")
     parser.add_argument('--keyword_th',
                         type=int,
@@ -124,7 +123,7 @@ if __name__ == '__main__':
     parser.add_argument('--gpu',
                         type=int,
                         default=0,
-                        help="GPU number to use")
+                        help="Ordinal of the GPU to use. Default is 0.")
     args = parser.parse_args()
 
     main(args)

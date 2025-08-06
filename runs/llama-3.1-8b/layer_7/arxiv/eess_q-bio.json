@@ -1,0 +1,7 @@
+{
+    "svm": {
+        "accuracy": 0.9923062188737071,
+        "n_mistakes_cls_0": 126,
+        "n_mistakes_cls_1": 115
+    }
+}

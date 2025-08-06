@@ -51,7 +51,7 @@ def main(args):
         assert args.keyword_th > 0 and args.keyword_th < 100, "Specify a valid percentage for keyword masking between 0 and 100."
         save_path = os.path.join('hidden_states/sensitivity_analysis',
                                  model_save_name,
-                                 f'layer_{args.layer}',
+                                 f'layer_XXX',
                                  args.dataset,
                                  args.topic,
                                  f'{args.keyword_th}%')
@@ -74,7 +74,7 @@ def main(args):
     else:
         save_path = os.path.join('hidden_states',
                                  model_save_name,
-                                 f'layer_{args.layer}',
+                                 f'layer_XXX',
                                  args.dataset,
                                  args.topic)
 
@@ -82,7 +82,9 @@ def main(args):
     dataset = TextDataset(list(data_df['text']))
     dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=False)
 
-    os.makedirs(save_path, exist_ok=True)
+    for layer in args.layers:
+        os.makedirs(save_path.replace('layer_XXX', f'layer_{layer}'),  # placeholder to be replaced laters
+                    exist_ok=True)
     
     p_bar = tqdm(dataloader, desc="Processing...", unit=' batch')
     with torch.no_grad():
@@ -96,8 +98,8 @@ def main(args):
             input_ids = encoded_inputs['input_ids']
             attention_mask = encoded_inputs['attention_mask']
             
-            outputs = model(input_ids=input_ids, attention_mask=attention_mask, use_cache=False)        
-            layer_hidden_states = outputs.hidden_states[args.layer]  # tuple of shape [batch, max_seq_len, hidden_dim]
+            outputs = model(input_ids=input_ids, attention_mask=attention_mask, use_cache=False)
+            activations = outputs.hidden_states
 
             # Free up some GPU memory
             input_ids = input_ids.cpu()
@@ -106,21 +108,26 @@ def main(args):
             del outputs
             torch.cuda.empty_cache()
 
-            # Taking the last token position might introduce noise because of the padding tokens
-            pad_mask = (input_ids == tokenizer.pad_token_id)
-            first_pad_positions = torch.where(
-                pad_mask.any(dim=1),
-                pad_mask.int().argmax(dim=1),
-                torch.tensor(input_ids.size(1))
-            ).squeeze()
+            for layer in args.layers:
+                layer_hidden_states = activations[layer]  # tuple of shape [batch, max_seq_len, hidden_dim]
 
-            valid_positions = first_pad_positions - 1
-            valid_positions = valid_positions.clamp(min=0)
+                # Taking the last token position might introduce noise because of the padding tokens
+                pad_mask = (input_ids == tokenizer.pad_token_id)
+                first_pad_positions = torch.where(
+                    pad_mask.any(dim=1),
+                    pad_mask.int().argmax(dim=1),
+                    torch.tensor(input_ids.size(1))
+                ).squeeze()
 
-            batch_indices = torch.arange(layer_hidden_states.shape[0])
+                valid_positions = first_pad_positions - 1
+                valid_positions = valid_positions.clamp(min=0)
 
-            selected_hidden_states = layer_hidden_states[batch_indices, valid_positions]
-            save_hidden_states(selected_hidden_states, batch_idx, save_path)
+                batch_indices = torch.arange(layer_hidden_states.shape[0])
+
+                selected_hidden_states = layer_hidden_states[batch_indices, valid_positions]
+                save_hidden_states(selected_hidden_states,
+                                   batch_idx,
+                                   save_path.replace('layer_XXX', f'layer_{layer}'))
 
 
 if __name__ == '__main__':
@@ -129,14 +136,17 @@ if __name__ == '__main__':
                         type=str,
                         default='meta-llama/Llama-3.1-8B',
                         help="The official Hugging Face model name or local path to the transformers checkpoint. The model must be causal.")
-    parser.add_argument('--layer',
+    parser.add_argument('--layers',
                         type=int,
-                        default=32,
+                        nargs='+',
                         help="Layer number to extract hidden states from. Uses 1-based indexing, e.g., to get the 17-th layer, set this to 17.")
     parser.add_argument('--dataset',
                         type=str,
                         default='arxiv',
-                        choices=['arxiv', 'cot', 'wildjb'],
+                        choices=['arxiv',
+                                 'cot',
+                                 'wildjb',
+                                 'wildjb/eval'],
                         help="Name of the dataset to be used. Datasets are assumed to be contained under './datasets/'.")
     parser.add_argument('--topic',
                         type=str,

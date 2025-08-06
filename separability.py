@@ -45,7 +45,7 @@ def main(args):
     os.makedirs(run_dir, exist_ok=True)
     save_path = os.path.join(run_dir, f'{args.topics[0]}_{args.topics[1]}.json')
 
-    if os.path.exists(save_path) or os.path.join(run_dir, f'{args.topics[1]}_{args.topics[0]}.json'):
+    if os.path.exists(save_path) or os.path.exists(os.path.join(run_dir, f'{args.topics[1]}_{args.topics[0]}.json')):
         exit(f"Run already exists at {save_path}. Exiting to avoid overwriting...")
 
     device = torch.device(f'cuda:{args.gpu}' if torch.cuda.is_available() else 'cpu')

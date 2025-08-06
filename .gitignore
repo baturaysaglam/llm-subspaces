@@ -18,6 +18,7 @@ plot.ipynb
 playground.ipynb
 
 # Python scripts
+compute_sing_values.py
 plot.py
 utils/plot.py
 

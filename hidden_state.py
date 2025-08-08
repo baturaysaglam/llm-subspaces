@@ -146,7 +146,9 @@ if __name__ == '__main__':
                         choices=['arxiv',
                                  'cot',
                                  'wildjb',
-                                 'wildjb/eval'],
+                                 'wildguardmix',
+                                 'wildjb/eval',
+                                 'wildguardmix/eval'],
                         help="Name of the dataset to be used. Datasets are assumed to be contained under './datasets/'.")
     parser.add_argument('--topic',
                         type=str,

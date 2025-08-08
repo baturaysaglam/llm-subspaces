@@ -110,7 +110,10 @@ if __name__ == '__main__':
     parser.add_argument('--dataset',
                         type=str,
                         default='arxiv',
-                        choices=['arxiv', 'cot', 'wildjb'],
+                        choices=['arxiv',
+                                 'cot',
+                                 'wildjb',
+                                 'wildguardmix'],
                         help="Name of the dataset. It has to be the same for both topics.")
     parser.add_argument('--topics',
                         type=str,

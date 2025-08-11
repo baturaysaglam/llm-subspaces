@@ -7,6 +7,7 @@ hidden_states/
 ift-models/
 run_scripts/
 singular_values/
+clf_models/
 
 # Datasets (WildJB is excluded as it's large)
 datasets/wildjb/

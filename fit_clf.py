@@ -115,7 +115,7 @@ if __name__ == "__main__":
                         help="Number of training epochs.")
     parser.add_argument('--batch_size',
                         type=int,
-                        default=2048,
+                        default=4096,
                         help="Batch size for training.")
     parser.add_argument('--mlp_layers',
                         type=int,
@@ -124,11 +124,11 @@ if __name__ == "__main__":
                         help="Number of layers in the MLP.")
     parser.add_argument('--lr',
                         type=float,
-                        default=7.55e-4,
+                        default=2.5e-4,
                         help="Learning rate for the optimizer.")
     parser.add_argument('--dropout',
                         type=float,
-                        default=0.1,
+                        default=0.0,
                         help="Dropout rate for the model.")
     parser.add_argument('--use_ln',
                         action='store_true',

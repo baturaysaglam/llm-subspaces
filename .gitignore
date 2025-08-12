@@ -8,6 +8,7 @@ ift-models/
 run_scripts/
 singular_values/
 clf_models/
+model_responses/
 
 # Datasets (WildJB is excluded as it's large)
 datasets/wildjb/
@@ -18,8 +19,10 @@ datasets/wildguardmix/
 visualization.ipynb
 plot.ipynb
 playground.ipynb
+refusal/check_refusal.ipynb
 
 # Python scripts
+separability.py
 compute_sing_values.py
 plot.py
 utils/plot.py

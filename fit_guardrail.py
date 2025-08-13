@@ -23,7 +23,6 @@ def main(args):
 
     run_id = uuid.uuid4().hex[:8]
     exp_dir = os.path.join('guardrail_models',
-                           args.dataset,
                            run_id)
     os.makedirs(exp_dir, exist_ok=True)
 

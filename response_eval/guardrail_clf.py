@@ -74,11 +74,13 @@ def main(model_name,
     for (key, value), logits, pred in p_bar:
         entry = value
         clf_responses_dict[key] = entry
-        clf_responses_dict[key][f"guardrail-{clf_args['model']}_clf"] = {
-            f"layer_{clf_args['layer']}": {
-                'logits': logits.cpu().numpy().tolist(),
-                'prediction': pred.item()
-            }
+
+        if f"guardrail-{clf_args['model']}_clf" not in clf_responses_dict[key]:
+            clf_responses_dict[key][f"guardrail-{clf_args['model']}_clf"] = {}
+
+        clf_responses_dict[key][f"guardrail-{clf_args['model']}_clf"][f"layer_{clf_args['layer']}"] = {
+            'logits': logits.cpu().numpy().tolist(),
+            'prediction': pred.item()
         }
 
     with open(response_path, "w") as f:

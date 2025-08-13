@@ -8,6 +8,7 @@ ift-models/
 run_scripts/
 singular_values/
 clf_models/
+guardrail_models/
 model_responses/
 
 # Datasets (WildJB is excluded as it's large)
@@ -19,7 +20,7 @@ datasets/wildguardmix/
 visualization.ipynb
 plot.ipynb
 playground.ipynb
-refusal/check_refusal.ipynb
+response_eval/check_refusal.ipynb
 
 # Python scripts
 separability.py

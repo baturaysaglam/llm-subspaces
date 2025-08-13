@@ -20,13 +20,14 @@ torch.manual_seed(SEED)
 def main(args):
     args.seed = SEED
     device = torch.device(f"cuda:{args.gpu}" if torch.cuda.is_available() else "cpu")
-    
-    exp_dir = os.path.join('clf_models',
-                           args.model,
-                           f'layer_{args.layer}',
+
+    run_id = uuid.uuid4().hex[:8]
+    exp_dir = os.path.join('guardrail_models',
                            args.dataset,
-                           uuid.uuid4().hex[:8])
+                           run_id)
     os.makedirs(exp_dir, exist_ok=True)
+
+    print(f"\n\t↳ Logging the experiment to {run_id}\n")
 
     model_conf = AutoConfig.from_pretrained(hf_model_name_dict[args.model])
 
@@ -76,8 +77,12 @@ def main(args):
     X_test = torch.cat([hidden_states_test[type] for type in topics], dim=0,).to(device)
     y_test = torch.tensor([i for i, type in enumerate(topics) for _ in range(hidden_states_test[type].shape[0])], device=device)
 
-    y_pred = final_clf.predict(X_test)
-    test_metrics = evaluate_classification(y_test.cpu().numpy(), y_pred.cpu().numpy())
+    y_pred = final_clf.predict(X_test).detach()
+    y_logits = final_clf(X_test).detach()
+
+    test_metrics = evaluate_classification(y_true=y_test.cpu().numpy(),
+                                           y_pred=y_pred.cpu().numpy(),
+                                           y_logits=y_logits.cpu().numpy())
 
     torch.save(final_clf.state_dict(), f'{exp_dir}/clf.pth')
 
@@ -115,7 +120,7 @@ if __name__ == "__main__":
                         help="Number of training epochs.")
     parser.add_argument('--batch_size',
                         type=int,
-                        default=4096,
+                        default=2048,
                         help="Batch size for training.")
     parser.add_argument('--mlp_layers',
                         type=int,

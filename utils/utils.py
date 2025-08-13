@@ -1,9 +1,7 @@
 import os
 from typing import Tuple
 
-import numpy as np
 import torch
-from torch.utils.data import Dataset
 from tqdm import tqdm
 
 
@@ -25,54 +23,6 @@ hf_model_name_dict = {
     'gpt2-medium': 'openai-community/gpt2-medium',
     'gpt2': 'openai-community/gpt2',
 }
-
-
-# Get model precision to save some GPU memory
-def get_model_precision(config_dtype: str = None) -> torch.dtype:
-    if isinstance(config_dtype, str):
-        dtype_mapping = {
-            'float16': torch.float16,
-            'float32': torch.float32,
-            'bfloat16': torch.bfloat16,
-            'float64': torch.float64,
-        }
-        config_dtype = dtype_mapping.get(config_dtype.lower(), None)
-    elif config_dtype is None:
-        config_dtype = torch.float32
-    
-    return config_dtype
-
-
-class TextDataset(Dataset):
-    def __init__(self, text_list: list[str]):
-        self.text_list = text_list
-
-    def __len__(self) -> int:
-        return len(self.text_list)
-
-    def __getitem__(self, idx: int) -> str:
-        return self.text_list[idx]
-
-
-def count_tokens(text_samples: list[str], tokenizer) -> list[int]:
-    p_bar = tqdm(text_samples, total=len(text_samples), desc='Tokenizing samples...')
-
-    token_counts = []
-    for text in p_bar:
-        tokenized = tokenizer.encode(text)
-        token_counts.append(len(tokenized))
-
-    return token_counts
-    
-
-def compute_basis(X: torch.Tensor, device: str = 'cuda:0') -> Tuple[np.array, np.array]:
-    X = X.to(device)
-    _, S, Vh = torch.linalg.svd(X - X.mean(axis=0), full_matrices=False)
-
-    S = S.cpu().numpy()
-    Vh = Vh.cpu().numpy()
-    
-    return S, Vh
 
 
 def load_hidden_states(model_name: str,
@@ -109,14 +59,6 @@ def load_hidden_states(model_name: str,
     hidden_states = hidden_states.to(dtype=torch.float32, device=device)
 
     return hidden_states
-
-
-def save_hidden_states(hidden_states: torch.Tensor,
-                       batch_idx: int,
-                       save_path: str) -> None:
-    os.makedirs(save_path, exist_ok=True)
-    save_path = os.path.join(save_path, f'batch_{batch_idx}.pt')
-    torch.save(hidden_states, save_path)
 
 
 def prepare_binary_clf_data(X0: torch.Tensor, X1: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:

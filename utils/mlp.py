@@ -82,7 +82,9 @@ def fit(clf: MLP,
 
         # Eval
         nn.Module.train(clf, False)
-        eval_metrics = eval(y_true=y_val, y_pred=clf.predict(X_val))
+        eval_metrics = eval(y_true=y_val,
+                            y_pred=clf.predict(X_val),
+                            y_logits=clf(X_val).detach())
         acc, macro_f1 = eval_metrics['accuracy'], eval_metrics['macro_f1']
 
         print(f"Epoch [{epoch}/{args.num_epochs}] | Val Accuracy: {acc:.4f} | Val Macro F1: {macro_f1:.4f} | AUC: {eval_metrics['auc']:.4f}")
@@ -95,22 +97,23 @@ def fit(clf: MLP,
             tol += 1
 
         if tol == early_stop_tol:
-            print(f"\n\t↳ Early stopping at epoch {epoch} with best macro F1 {max_macro_f1:.4f}")
+            print(f"\n\t↳ Early stopping at epoch {epoch} with best macro F1 {max_macro_f1:.4f}\n")
             break
 
     return final_clf
 
 
-def eval(y_true: torch.Tensor, y_pred: torch.Tensor) -> dict:
+def eval(y_true: torch.Tensor, y_pred: torch.Tensor, y_logits: torch.Tensor) -> dict:
     y_true_np = y_true.cpu().numpy()
     y_pred_np = y_pred.cpu().numpy()
+    y_logits = y_logits.cpu().numpy()
 
     acc = accuracy_score(y_true_np, y_pred_np)
     macro_f1 = f1_score(y_true_np, y_pred_np, average='macro')
     # ROC-AUC for harmfulness
     auc = group_auc(y_true.cpu().numpy(),
-                    y_pred.cpu().numpy(),
-                    group=(1, 3))  # malicious classes
+                    y_logits,
+                    pos_cls=(1, 3))  # malicious classes
 
     return {
         'accuracy': acc,

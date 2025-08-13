@@ -3,16 +3,17 @@ import argparse
 import json
 import os
 import sys
+from multiprocessing import Pool
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from tqdm import tqdm
-from vllm import LLM
 
-from query import query_llama_guard
+from utils.query import init_pool, process_sample
 
 
 def main(args):
+    # 1) Load the collected response JSON
     response_path = os.path.join(
         'model_responses',
         args.model,
@@ -22,28 +23,33 @@ def main(args):
     with open(response_path, "r") as f:
         responses_dict = json.load(f)
 
-    model = LLM(model=args.llama_guard_model,
-            tensor_parallel_size=8,
-            max_num_seqs=1)
-    tokenizer = model.get_tokenizer()
+    # 2) Freeze order and dispatch to Pool
+    default_clf = 'true' if 'harmful' in args.prompt_type else 'false'
+    inputs = [(i, j, default_clf) for i, j in responses_dict.items()]
 
-    clf_responses_dict = {}
-    p_bar = tqdm(responses_dict.items(),
-             total=len(responses_dict),     
-             desc="Classifying responses",)
-    for key, value in p_bar:
-        entry = value
-        entry['llama_guard_clf'] = {}
-        entry['llama_guard_clf']['prediction'] = query_llama_guard(entry['prompt'], model, tokenizer)
-        clf_responses_dict[key] = entry
+    with Pool(
+        processes=args.num_workers,
+        initializer=init_pool,
+        initargs=(args.api_version, args.gemini_model)
+    ) as pool:
+        results = list(tqdm(
+            pool.imap(process_sample, inputs),
+            total=len(inputs),
+            desc=f'Processing {args.prompt_type} prompts'
+        ))
 
+    # 3) Rebuild dict in original order
+    clf_responses_dict = {k: v for k, v in results}
+
+    # 4) Write ONCE at the end
     with open(response_path, "w") as f:
         json.dump(clf_responses_dict, f, indent=4)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description="Classify the model responses as 'refusal' using Gemini API."
+        description="Classify the model responses as 'refusal' using Gemini API." \
+        "It overrides and adds Gemini's classifications to the existing response JSON."
     )
     # Data arguments
     parser.add_argument('--model',
@@ -61,12 +67,20 @@ if __name__ == '__main__':
                         type=str,
                         default='vanilla_benign',
                         help="Type of prompt dataset.")
-
-    # Llama Guard arguments (usually we don't touch these)
-    parser.add_argument('--llama_guard_model',
+    
+    # Gemini arguments (usually we don't touch these)
+    parser.add_argument('--gemini_model',
                         type=str,
-                        default='meta-llama/Llama-Guard-3-8B',
-                        help="Full Hugging Face name of the Llama Guard model to use for classification.")
+                        default='gemini-2.0-flash',
+                        help="Name of the Gemini model to use for classification.")
+    parser.add_argument('--api_version',
+                        type=str,
+                        default='v1',
+                        help="API version for the GenAI client.")    
+    parser.add_argument('--num_workers',
+                        type=int,
+                        default=4,
+                        help="Number of parallel processes to use.")
     args = parser.parse_args()
 
     main(args)

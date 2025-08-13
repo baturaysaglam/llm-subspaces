@@ -10,43 +10,26 @@ _GLOBAL_CLIENT = None
 _GLOBAL_MODEL = None
 
 
-def query_vllm_model(input,
-                     model,
-                     tokenizer,
-                     temperature=0.0):
-        sampling_params = {
-            "temperature": temperature,
-            "top_p": 1.0,
-            "max_tokens": 250,
-            "skip_special_tokens": False,
-        }
-
-        output = model.generate([input],
-                                sampling_params=SamplingParams(**sampling_params),
-                                use_tqdm=False,)
-        output_ids = list(output[0].outputs[0].token_ids)
-        output_text = tokenizer.decode(output_ids, skip_special_tokens=False)
-
-        return output_text
-
-
-def query_llama_guard(prompt: int,
+def query_vllm_model(prompt: int,
                       model: LLM,
-                      tokenizer) -> bool:
+                      tokenizer,
+                      max_tokens: int,
+                      temperature: float) -> bool:
     chat = [{"role": "user", "content": prompt}]
     input = tokenizer.apply_chat_template(chat, add_generation_prompt=True, tokenize=False)
     input_ids = tokenizer.encode(input)
 
-    sampling_params = {"max_tokens": 1024 - len(input_ids),
-                   "temperature": 0.1,}
-
+    sampling_params = {"max_tokens": max_tokens,
+                       "temperature": temperature,
+                       "top_p": 1.0 if temperature == 0.0 else 0.95}
+    
     output = model.generate(TokensPrompt({"prompt_token_ids": input_ids}, eos_id=tokenizer.eos_token_id),
                             sampling_params=SamplingParams(**sampling_params),
                             use_tqdm=False,)
     output_ids = list(output[0].outputs[0].token_ids)
-    llama_guard_clf = tokenizer.decode(output_ids, skip_special_tokens=False)
+    output_str = tokenizer.decode(output_ids, skip_special_tokens=True)
 
-    return 'unsafe' in llama_guard_clf.strip().lower()
+    return output_str.strip()
 
 
 def query_gemini(prompt_response_pair_str: str, default_clf: str) -> str:

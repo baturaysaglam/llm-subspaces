@@ -106,9 +106,7 @@ if __name__ == "__main__":
     parser.add_argument('--dataset',
                         type=str,
                         default='wildjb',
-                        choices=['arxiv',
-                                 'cot',
-                                 'wildjb',
+                        choices=['wildjb',
                                  'wildguardmix'],
                         help="Name of the dataset. It's assumed to locate under './datasets'")
     

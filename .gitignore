@@ -3,6 +3,7 @@
 __pycache__/
 
 # Folders
+figs/
 hidden_states/
 ift-models/
 run_scripts/
@@ -10,6 +11,7 @@ singular_values/
 clf_models/
 guardrail_models/
 model_responses/
+singular_vals/
 
 # Datasets (WildJB is excluded as it's large)
 datasets/wildjb/

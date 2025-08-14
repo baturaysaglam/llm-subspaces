@@ -20,6 +20,7 @@ def main(model,
          prompt_type,
          llama_guard_model,):
     llama_guard_model_name = llama_guard_model.llm_engine.model_config.model
+    llama_guard_model_name = llama_guard_model_name.split('/')[-1].lower()
     
     # Load the collected response JSON
     response_path = os.path.join(
@@ -46,7 +47,6 @@ def main(model,
                                       temperature=0.0)
 
         entry['llama-guard_clf'] = {}
-
         entry['llama-guard_clf'][llama_guard_model_name] = {}
         entry['llama-guard_clf'][llama_guard_model_name]['prediction'] = prediction
 

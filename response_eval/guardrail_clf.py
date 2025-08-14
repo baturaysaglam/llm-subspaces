@@ -78,7 +78,7 @@ def main(model_name,
         if f"guardrail-{clf_args['model']}_clf" not in clf_responses_dict[key]:
             clf_responses_dict[key][f"guardrail-{clf_args['model']}_clf"] = {}
 
-        clf_responses_dict[key][f"guardrail-{clf_args['model']}_clf"][f"layer_{clf_args['layer']}"] = {
+        clf_responses_dict[key][f"guardrail-{clf_args['model']}_clf"][f"layer_{clf_args['layer']}-{args.run_id}"] = {
             'logits': logits.cpu().numpy().tolist(),
             'prediction': pred.item()
         }

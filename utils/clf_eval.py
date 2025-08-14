@@ -6,7 +6,7 @@ from sklearn.metrics import (accuracy_score, balanced_accuracy_score, classifica
 
 def evaluate_classification(y_true: np.ndarray,
                             y_pred: np.ndarray,
-                            y_logits: np.ndarray) -> dict:
+                            y_logits: np.ndarray = None) -> dict:
     """
     Computes:
         - Overall performance: Accuracy, Balanced Accuracy, Macro F1 (due to class imbalance)
@@ -36,7 +36,11 @@ def evaluate_classification(y_true: np.ndarray,
     y_pred_bin = harmful_map_arr[y_pred]
 
     macro_f1_harmful = f1_score(y_test_bin, y_pred_bin, average='macro', zero_division=0)
-    roc_auc = group_auc(y_true, y_logits, pos_cls=(1, 3))
+
+    if y_logits is not None:
+        roc_auc = group_auc(y_true, y_logits, pos_cls=(1, 3))
+    else:
+        roc_auc = None
 
     # Adversarial vs. Vanilla
     adv_map_arr = np.array([0, 0, 1, 1])
@@ -58,7 +62,9 @@ def evaluate_classification(y_true: np.ndarray,
 
     print("Harmful vs. Benign:")
     print(f"↳ Harmful Macro F1: {macro_f1_harmful:.4f}")
-    print(f"↳ Harmful ROC-AUC: {roc_auc:.4f}\n")
+
+    if roc_auc is not None:
+        print(f"↳ Harmful ROC-AUC: {roc_auc:.4f}\n")
 
     print("Adversarial vs. Vanilla:")
     print(f"↳ Adversarial Accuracy: {acc_adv:.4f}")

@@ -59,9 +59,9 @@ def fit(clf: MLP,
         eval_ratio: int,
         early_stop_tol: int) -> MLP:
     X_train, y_train, X_val, y_val = stratified_train_eval_split(X,
-                                                                   y,
-                                                                   eval_ratio=eval_ratio,
-                                                                   seed=args.seed)
+                                                                 y,
+                                                                 eval_ratio=eval_ratio,
+                                                                 seed=args.seed)
     train_loader = DataLoader(TensorDataset(X_train, y_train),
                               batch_size=args.batch_size,
                               shuffle=True)

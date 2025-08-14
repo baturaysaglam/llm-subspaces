@@ -22,6 +22,7 @@ def main(model,
          dataset,
          prompt_type):
     model_name = model.llm_engine.model_config.model
+    model_name = model_name.split('/')[-1].lower()
     prompts = pd.read_csv(f'datasets/wildjb/eval/{prompt_type}.csv')['text'].tolist()
 
     save_path = f"model_responses/{model_name}/{dataset}"
@@ -49,7 +50,7 @@ def main(model,
             response = query_vllm_model(prompt,
                                         model,
                                         tokenizer,
-                                        max_tokens=512,
+                                        max_tokens=250,
                                         temperature=temp)
 
             tokenized = tokenizer.tokenize(response, add_special_tokens=False)

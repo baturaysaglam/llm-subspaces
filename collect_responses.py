@@ -23,7 +23,7 @@ def main(model,
          prompt_type):
     model_name = model.llm_engine.model_config.model
     model_name = model_name.split('/')[-1].lower()
-    prompts = pd.read_csv(f'datasets/wildjb/eval/{prompt_type}.csv')['text'].tolist()
+    prompts = pd.read_csv(f'datasets/{dataset}/{prompt_type}.csv')['text'].tolist()
 
     save_path = f"model_responses/{model_name}/{dataset}"
     os.makedirs(save_path, exist_ok=True)
@@ -83,13 +83,15 @@ if __name__ == '__main__':
                         default='wildjb/eval',
                         choices=[
                             'wildjb/eval',
-                            'wildguardmix/eval'
+                            'wildguardmix/eval',
+                            'harmbench'
                         ],
                         help="Name of the dataset. It's assumed to locate under './datasets'")
     parser.add_argument('--prompt_types',
                         type=str,
                         nargs='+',
                         default=[
+                            # WildJailbreak and WildGuardMix
                             'vanilla_benign',
                             'vanilla_harmful',
                             'adversarial_benign',

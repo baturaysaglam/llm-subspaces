@@ -25,8 +25,9 @@ def main(model_name,
     with open(os.path.join(f'guardrail_models/{run_id}/args.json')) as f:
         clf_args = json.load(f)
 
-    assert clf_args['dataset'] == dataset.split('/eval')[0], f"Dataset mismatch detected between classifier and current dataset."\
-        f"\n\tDataset: {dataset}, Classifier: {clf_args['dataset']}"
+    if clf_args['dataset'] != dataset.split('/eval')[0]:
+        Warning(f"Dataset mismatch detected between classifier and current dataset."
+                f"\n\tDataset: {dataset}, Classifier: {clf_args['dataset']}")
 
     model_conf = AutoConfig.from_pretrained(hf_model_name_dict[clf_args['model']])
     hidden_states = load_hidden_states(model_name,
@@ -103,7 +104,9 @@ if __name__ == '__main__':
                         type=str,
                         default='wildjb/eval',
                         choices=['wildjb/eval',
-                                 'wildguardmix/eval'],
+                                 'wildguardmix/eval',
+                                 'harmbench'
+                        ],
                         help="Name of the dataset. It's assumed to locate under './datasets'")
     parser.add_argument('--prompt_types',
                         type=str,

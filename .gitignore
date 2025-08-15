@@ -16,6 +16,7 @@ singular_vals/
 # Datasets (WildJB is excluded as it's large)
 datasets/wildjb/
 datasets/wildguardmix/
+datasets/harmbench/
 
 # Notebooks
 *.ipynb_checkpoints

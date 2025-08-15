@@ -72,7 +72,8 @@ if __name__ == '__main__':
                         default='wildjb/eval',
                         choices=[
                             'wildjb/eval',
-                            'wildguardmix/eval'
+                            'wildguardmix/eval',
+                            'harmbench'
                         ],
                         help="Name of the dataset. It's assumed to locate under './datasets'")
     parser.add_argument('--prompt_types',

@@ -148,7 +148,8 @@ if __name__ == '__main__':
                                  'wildjb',
                                  'wildguardmix',
                                  'wildjb/eval',
-                                 'wildguardmix/eval'],
+                                 'wildguardmix/eval',
+                                 'harmbench'],
                         help="Name of the dataset to be used. Datasets are assumed to be contained under './datasets/'.")
     parser.add_argument('--topic',
                         type=str,
@@ -173,6 +174,7 @@ if __name__ == '__main__':
                             'adversarial_harmful',
                             'vanilla_benign',
                             'vanilla_harmful',
+                            'behaviors_text_all'  # HarmBench
                         ],
                         help="Topic or subset within the dataset. For arXiv, these are the subject areas. For CoT and Wild-JB, these are the respective subsets.")
     parser.add_argument('--batch_size',

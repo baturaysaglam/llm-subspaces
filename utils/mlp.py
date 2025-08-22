@@ -1,81 +1,150 @@
 import torch
 import torch.nn as nn
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import accuracy_score, f1_score
+from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader, TensorDataset
+
+from .clf_eval import group_auc
 
 
 class MLP(nn.Module):
-    def __init__(self, input_dim: int, hidden_layers: list[int]):
+    def __init__(self,
+    d_in: int,
+                 n_cls: int,
+                 hidden_size: list[int],
+                 dropout_p: float,
+                 use_ln: bool):
         super().__init__()
-        layers = []
-        prev_dim = input_dim
+        self.ln_in = nn.LayerNorm(d_in) if use_ln else nn.Identity()
+        # Identify the two widest layers
+        drop_idx = set(sorted(range(len(hidden_size)), key=lambda i: (-hidden_size[i], i))[:min(2, len(hidden_size))])
 
-        for h in hidden_layers:
-            layers += [nn.Linear(prev_dim, h), nn.GELU()]
-            prev_dim = h
-        
-        layers.append(nn.Linear(prev_dim, 4))
-        self.net = nn.Sequential(*layers)
+        layers = []
+        d_prev = d_in
+        for i, h in enumerate(hidden_size):
+            block = []
+            block.append(nn.Linear(d_prev, h))
+            block.append(nn.GELU())
+
+            # Apply dropout to the two widest layers
+            if i in drop_idx:
+                block.append(nn.Dropout(dropout_p))
+
+            # Don't apply layer norm to the final hidden layer
+            if i < len(hidden_size) - 1:
+                block.append(nn.LayerNorm(h))
+
+            layers.append(nn.Sequential(*block))
+            d_prev = h
+
+        self.hidden = nn.ModuleList(layers)
+        self.out = nn.Linear(d_prev, n_cls)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.net(x)
+        x = self.ln_in(x)
+        for block in self.hidden:
+            x = block(x)
 
-    def train(
-        self,
-        samples: torch.Tensor,
-        labels: torch.Tensor,
-        epochs: int,
-        learning_rate: float,
-        batch_size: int,
+        return self.out(x)
+
+    def predict(self, x: torch.Tensor) -> torch.Tensor:
+        with torch.no_grad():
+            out = self.forward(x)
+        return out.argmax(dim=-1)
+
+
+def fit(clf: MLP,
+        X: torch.Tensor,
+        y: torch.Tensor,
+        lr: float = 1e-4,
+        batch_size: int = 2048,
+        num_epochs: int = 40,
         eval_ratio: float = 0.1,
-        return_best_model: bool = True,
-    ):
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.to(device)
-        samples, labels = samples.to(device), labels.to(device)
+        early_stop_tol: int = 5,
+        seed: int = 42) -> MLP:
+    X_train, y_train, X_val, y_val = stratified_train_eval_split(X,
+                                                                 y,
+                                                                 eval_ratio=eval_ratio,
+                                                                 seed=seed)
+    train_loader = DataLoader(TensorDataset(X_train, y_train),
+                              batch_size=batch_size,
+                              shuffle=True)
+    
+    optim = torch.optim.Adam(clf.parameters(), lr=lr, weight_decay=1e-2)
+    loss_fn = nn.CrossEntropyLoss()  # we don't use the weighted variant as class imbalance is mild
 
-        # shuffle & split
-        idx = torch.randperm(samples.size(0))
-        split = int(samples.size(0) * (1 - eval_ratio))
-        X_train, y_train = samples[idx][:split], labels[idx][:split]
-        X_eval,  y_eval  = samples[idx][split:], labels[idx][split:]
+    final_clf, max_macro_f1, tol = None, 0.0, 0
+    for epoch in range(1, num_epochs):
+        # Train
+        nn.Module.train(clf, True)
 
-        loader = DataLoader(TensorDataset(X_train, y_train),
-                            batch_size=min(batch_size, len(X_train)), shuffle=True)
-        opt = torch.optim.Adam(self.parameters(), lr=learning_rate, weight_decay=1e-4)
-        criterion = nn.CrossEntropyLoss()
+        for batch_X, batch_y in train_loader:
+            optim.zero_grad()
+            loss = loss_fn(clf(batch_X), batch_y)
+            loss.backward()
+            optim.step()
 
-        for epoch in range(1, epochs + 1):
-            nn.Module.train(self, True)
-            for x, y in loader:
-                opt.zero_grad()
-                loss = criterion(self(x), y)
-                loss.backward()
-                opt.step()
+        # Eval
+        nn.Module.train(clf, False)
+        eval_metrics = eval(y_true=y_val,
+                            y_pred=clf.predict(X_val),
+                            y_logits=clf(X_val).detach())
+        acc, macro_f1 = eval_metrics['accuracy'], eval_metrics['macro_f1']
 
-            nn.Module.train(self, False)
-            with torch.no_grad():
-                logits = self(X_eval)  # (N, 4)
-                probs  = torch.softmax(logits, dim=1)
-                preds = logits.argmax(1)
-                acc = (preds == y_eval).float().mean().item()
+        print(f"Epoch [{epoch}/{num_epochs}] | Val Accuracy: {acc:.4f} | Val Macro F1: {macro_f1:.4f} | AUC: {eval_metrics['auc']:.4f}")
 
-                # ---------- binary grouping -------------
-                group1_idx = torch.tensor([0, 2], device=probs.device)
-                p_group1 = probs[:, group1_idx].sum(dim=1).cpu().numpy()  # score = P(group1)
-                y_group = torch.isin(y_eval, group1_idx).long().cpu().numpy()  # 1 if label in {0,2}
+        if macro_f1 > max_macro_f1:
+            max_macro_f1 = macro_f1
+            final_clf = clf
+            tol = 0
+        else:
+            tol += 1
 
-                # ---------- metrics -------------------------
-                g_auc = roc_auc_score(y_group, p_group1)  # grouped ROC-AUC
-                acc = (preds == y_eval).float().mean().item()  # optional sanity-check
+        if tol == early_stop_tol:
+            print(f"\n\t↳ Early stopping at epoch {epoch} with best macro F1 {max_macro_f1:.4f}\n")
+            break
 
-            print(f"epoch [{epoch}/{epochs}] | eval acc: {acc:.4f} | grouped AUC: {g_auc:.4f}")
+    return final_clf
 
-        return self
 
-    @torch.no_grad()
-    def predict(self, samples: torch.Tensor) -> torch.Tensor:
-        logits = self.forward(samples)
-        pred = logits.argmax(dim=-1)
+def eval(y_true: torch.Tensor, y_pred: torch.Tensor, y_logits: torch.Tensor) -> dict:
+    y_true_np = y_true.cpu().numpy()
+    y_pred_np = y_pred.cpu().numpy()
+    y_logits = y_logits.cpu().numpy()
 
-        return pred
+    acc = accuracy_score(y_true_np, y_pred_np)
+    macro_f1 = f1_score(y_true_np, y_pred_np, average='macro')
+    # ROC-AUC for harmfulness
+    auc = group_auc(y_true.cpu().numpy(),
+                    y_logits,
+                    pos_cls=(1, 3))  # malicious classes
+
+    return {
+        'accuracy': acc,
+        'macro_f1': macro_f1,
+        'auc': auc
+    }
+
+
+def stratified_train_eval_split(X: torch.Tensor,
+                                y: torch.Tensor,
+                                eval_ratio: 0.1,
+                                seed: int = 42) -> tuple:
+    device, x_dtype, y_dtype = X.device, X.dtype, y.dtype
+    X_np = X.detach().cpu().numpy()
+    y_np = y.detach().cpu().numpy()
+
+    X_train, X_val, y_train, y_val = train_test_split(
+        X_np, y_np,
+        test_size=eval_ratio,
+        random_state=seed,
+        stratify=y_np,
+        shuffle=True,
+    )
+
+    X_train = torch.from_numpy(X_train).to(device=device, dtype=x_dtype)
+    X_val = torch.from_numpy(X_val).to(device=device, dtype=x_dtype)
+    y_train = torch.from_numpy(y_train).to(device=device, dtype=y_dtype)
+    y_val = torch.from_numpy(y_val).to(device=device, dtype=y_dtype)
+
+    return X_train, y_train, X_val, y_val
